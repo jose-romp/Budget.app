@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Presupuesto mensual</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Presupuesto">
+<meta name="theme-color" content="#1B1A18">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+  :root {
+    --bg:#1B1A18; --surface:#242220; --surface-alt:#1B1A18; --border:#3A372F; --border-soft:#2C2A27;
+    --text:#EFEBE3; --text-muted:#A39C8E; --accent:#7FA98D; --danger:#C1694A;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; }
+  input, select, button { font-family: inherit; }
+  input:focus, select:focus, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  button { cursor:pointer; }
+  ::placeholder { color:#7A756A; }
+  .page { max-width:960px; margin:0 auto; padding:32px 20px 60px; }
+  header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .eyebrow { color:var(--text-muted); font-size:13px; margin-bottom:4px; }
+  h1 { font-family:Georgia,'Iowan Old Style',serif; font-size:30px; margin:0; text-transform:capitalize; font-weight:400; }
+  .month-nav { display:flex; gap:8px; align-items:center; }
+  .nav-btn { background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:6px; width:36px; height:36px; font-size:18px; }
+  .tc-box { display:flex; align-items:center; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; color:var(--text-muted); }
+  .tc-box input { width:80px; background:transparent; border:none; color:var(--text); font-size:14px; text-align:right; }
+  .stats-bar { display:flex; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 22px; margin-bottom:20px; flex-wrap:wrap; gap:14px; }
+  .stat { min-width:120px; }
+  .stat-divider { width:1px; align-self:stretch; background:var(--border); }
+  .stat-label { font-size:12px; color:var(--text-muted); margin-bottom:4px; }
+  .stat-value { font-size:19px; font-variant-numeric:tabular-nums; font-weight:600; }
+  .error-box, .info-box { padding:10px 14px; border-radius:8px; margin-bottom:16px; font-size:14px; }
+  .error-box { background:rgba(193,105,74,0.15); border:1px solid var(--danger); }
+  .info-box { background:rgba(127,169,141,0.12); border:1px solid var(--accent); color:var(--text-muted); }
+  .columns { display:grid; grid-template-columns:minmax(260px,1fr) minmax(340px,1.5fr); gap:20px; }
+  @media (max-width:760px) { .columns { grid-template-columns:1fr; } }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px; }
+  .panel h2 { font-family:Georgia,'Iowan Old Style',serif; font-weight:400; font-size:18px; margin:0 0 14px; }
+  .group-label { font-size:12px; letter-spacing:0.03em; color:var(--text-muted); margin:14px 0 8px; }
+  .group-label:first-child { margin-top:0; }
+  .cat-row { border-bottom:1px solid var(--border-soft); padding-bottom:10px; margin-bottom:12px; }
+  .cat-row-top { display:flex; justify-content:space-between; margin-bottom:6px; }
+  .cat-name { font-size:14px; }
+  .track { height:6px; border-radius:3px; background:#37352F; overflow:hidden; }
+  .fill { height:100%; border-radius:3px; background:var(--accent); }
+  .fill.over { background:var(--danger); }
+  .cat-row-bottom { display:flex; justify-content:space-between; font-size:12px; margin-top:6px; color:var(--text-muted); }
+  .cat-row-bottom.over span:first-child { color:var(--danger); }
+  .inline-input { width:80px; background:transparent; border:none; border-bottom:1px solid var(--border); color:var(--text); font-size:12px; padding:2px 0; text-align:right; }
+  .form-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .field { background:var(--surface-alt); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:8px 10px; font-size:14px; }
+  .btn-primary { background:var(--accent); border:none; color:var(--bg); border-radius:6px; padding:8px 16px; font-size:14px; font-weight:600; }
+  .btn-secondary { background:transparent; border:1px solid var(--accent); color:var(--accent); border-radius:6px; padding:8px 16px; font-size:14px; }
+  .link-btn { background:none; border:none; color:var(--text-muted); font-size:12px; text-decoration:underline; padding:0; }
+  .tx-list { display:flex; flex-direction:column; gap:10px; max-height:460px; overflow-y:auto; }
+  .tx-row { background:var(--surface-alt); border:1px solid var(--border-soft); border-radius:8px; padding:10px 14px; }
+  .tx-row-top { display:flex; justify-content:space-between; align-items:center; }
+  .tx-desc { font-size:14px; }
+  .tx-meta { font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .tx-right { display:flex; align-items:center; gap:10px; font-variant-numeric:tabular-nums; }
+  .amount-income { color:var(--accent); }
+  .amount-expense { color:var(--danger); }
+  .tag { font-size:11px; padding:2px 7px; border-radius:10px; border:1px solid var(--border); color:var(--text-muted); }
+  .tag.pending { border-color:#D8A94E; color:#D8A94E; }
+  .empty { color:var(--text-muted); font-size:14px; padding:20px 0; text-align:center; }
+  .setup { max-width:440px; margin:80px auto; text-align:center; }
+  .setup input { width:100%; margin:14px 0; }
+  label.check { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const { useState, useEffect, useMemo, useCallback } = React;
+const h = React.createElement;
+
+const MONTH_NAMES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+function uid() { return Math.random().toString(36).slice(2,10); }
+function monthKey(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
+function fmtARS(n) { return "$ " + (n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtUSD(n) { return "US$ " + (n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtByCurrency(n, currency) { return currency === "USD" ? fmtUSD(n) : fmtARS(n); }
+
+function api(apiUrl, action, payload) {
+  return fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, payload }),
+  }).then(r => r.json());
+}
+
+function App() {
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem("presupuesto_api_url") || "");
+  const [urlDraft, setUrlDraft] = useState("");
+  const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [cursor, setCursor] = useState(() => { const n = new Date(); n.setDate(1); return n; });
+  const [categories, setCategories] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [config, setConfigState] = useState({ tipoCambio: 1000 });
+  const [tcDraft, setTcDraft] = useState("1000");
+
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatParent, setNewCatParent] = useState("");
+  const [newCatBudget, setNewCatBudget] = useState("");
+
+  const [form, setForm] = useState({
+    desc:"", amount:"", currency:"ARS", type:"expense", categoryId:"",
+    date:new Date().toISOString().slice(0,10), shared:false,
+  });
+
+  const applyState = useCallback((data) => {
+    if (data.error) { setError(data.error); return; }
+    setCategories(data.categories || []);
+    setTransactions(data.transactions || []);
+    if (data.config) {
+      setConfigState(data.config);
+      setTcDraft(String(data.config.tipoCambio || 1000));
+    }
+  }, []);
+
+  const refresh = useCallback(() => {
+    if (!apiUrl) return;
+    setLoading(true);
+    fetch(apiUrl).then(r => r.json()).then(data => {
+      applyState(data);
+      setError("");
+    }).catch(() => setError("No se pudo conectar con la Sheet. Revisá la URL o tu conexión."))
+      .finally(() => setLoading(false));
+  }, [apiUrl, applyState]);
+
+  useEffect(() => { if (apiUrl) refresh(); setReady(true); }, [apiUrl]);
+
+  function saveApiUrl(e) {
+    e.preventDefault();
+    if (!urlDraft.trim()) return;
+    localStorage.setItem("presupuesto_api_url", urlDraft.trim());
+    setApiUrl(urlDraft.trim());
+  }
+
+  function mutate(action, payload) {
+    setLoading(true);
+    api(apiUrl, action, payload).then(data => {
+      applyState(data);
+      setError("");
+    }).catch(() => setError("No se pudo guardar. Probá de nuevo."))
+      .finally(() => setLoading(false));
+  }
+
+  const mKey = monthKey(cursor);
+  const tipoCambio = Number(config.tipoCambio) || 1;
+  const toARS = (amount, currency) => currency === "USD" ? amount * tipoCambio : amount;
+
+  const monthTx = useMemo(() => transactions.filter(t => t.month === mKey), [transactions, mKey]);
+  const totalIncome = useMemo(() => monthTx.filter(t=>t.type==="income").reduce((s,t)=>s+toARS(t.amount,t.currency),0), [monthTx, tipoCambio]);
+  const totalExpense = useMemo(() => monthTx.filter(t=>t.type==="expense").reduce((s,t)=>s+toARS(t.amount,t.currency),0), [monthTx, tipoCambio]);
+  const teDeben = useMemo(() => monthTx.filter(t=>t.type==="expense"&&t.shared&&t.status==="pendiente").reduce((s,t)=>s+toARS(t.amount,t.currency)/2,0), [monthTx, tipoCambio]);
+  const balance = totalIncome - totalExpense;
+
+  const spentByCategory = useMemo(() => {
+    const map = {};
+    monthTx.filter(t=>t.type==="expense").forEach(t => { map[t.categoryId] = (map[t.categoryId]||0) + toARS(t.amount,t.currency); });
+    return map;
+  }, [monthTx, tipoCambio]);
+
+  const topCats = categories.filter(c => !c.parentId);
+  const childrenOf = (id) => categories.filter(c => c.parentId === id);
+  const flatOptions = [];
+  topCats.forEach(p => {
+    const kids = childrenOf(p.id);
+    if (kids.length === 0) flatOptions.push(p);
+    else kids.forEach(k => flatOptions.push(k));
+  });
+
+  if (!ready) return h("div", { className:"page" }, h("div", { className:"empty" }, "Cargando…"));
+
+  if (!apiUrl) {
+    return h("div", { className:"page" },
+      h("div", { className:"setup" },
+        h("div", { className:"eyebrow" }, "Presupuesto mensual"),
+        h("h1", null, "Conectar tu Google Sheet"),
+        h("p", { style:{color:"var(--text-muted)", fontSize:14} }, "Pegá la URL del Web App de Apps Script (ver instrucciones de despliegue)."),
+        h("form", { onSubmit:saveApiUrl },
+          h("input", { className:"field", style:{width:"100%"}, placeholder:"https://script.google.com/macros/s/.../exec", value:urlDraft, onChange:e=>setUrlDraft(e.target.value) }),
+          h("button", { className:"btn-primary", type:"submit", style:{width:"100%"} }, "Conectar")
+        )
+      )
+    );
+  }
+
+  function submitCat(e) {
+    e.preventDefault();
+    const budget = parseFloat(newCatBudget) || 0;
+    if (!newCatName.trim()) { setError("Poné un nombre para la categoría."); return; }
+    mutate("addCategory", { id: uid(), name: newCatName.trim(), parentId: newCatParent || null, budget });
+    setNewCatName(""); setNewCatParent(""); setNewCatBudget("");
+  }
+
+  function submitTx(e) {
+    e.preventDefault();
+    const amount = parseFloat(form.amount);
+    if (!form.desc.trim() || !Number.isFinite(amount) || amount <= 0) { setError("Completá descripción y un monto mayor a cero."); return; }
+    if (form.type === "expense" && !form.categoryId) { setError("Elegí una categoría para el gasto."); return; }
+    mutate("addTransaction", {
+      id: uid(), month: mKey, date: form.date, desc: form.desc.trim(), amount,
+      currency: form.currency, type: form.type,
+      categoryId: form.type === "expense" ? form.categoryId : null,
+      shared: form.type === "expense" ? form.shared : false,
+      status: "pendiente",
+    });
+    setForm({ ...form, desc:"", amount:"", shared:false });
+  }
+
+  return h("div", { className:"page" },
+    h("header", null,
+      h("div", null,
+        h("div", { className:"eyebrow" }, "Presupuesto mensual"),
+        h("h1", null, `${MONTH_NAMES[cursor.getMonth()]} ${cursor.getFullYear()}`)
+      ),
+      h("div", { style:{display:"flex", gap:10, alignItems:"center", flexWrap:"wrap"} },
+        h("div", { className:"tc-box" }, "TC USD",
+          h("input", { type:"number", value:tcDraft, onChange:e=>setTcDraft(e.target.value),
+            onBlur:()=>mutate("setConfig",{key:"tipoCambio", value: parseFloat(tcDraft)||1}) })
+        ),
+        h("div", { className:"month-nav" },
+          h("button", { className:"nav-btn", onClick:()=>setCursor(new Date(cursor.getFullYear(),cursor.getMonth()-1,1)) }, "‹"),
+          h("button", { className:"nav-btn", onClick:()=>setCursor(new Date(cursor.getFullYear(),cursor.getMonth()+1,1)) }, "›"),
+          h("button", { className:"nav-btn", onClick:refresh, title:"Actualizar" }, "↻")
+        )
+      )
+    ),
+    error && h("div", { className:"error-box" }, error),
+    loading && h("div", { className:"info-box" }, "Sincronizando…"),
+    h("section", { className:"stats-bar" },
+      h("div", { className:"stat" }, h("div",{className:"stat-label"},"Ingresos"), h("div",{className:"stat-value",style:{color:"var(--accent)"}}, fmtARS(totalIncome))),
+      h("div", { className:"stat-divider" }),
+      h("div", { className:"stat" }, h("div",{className:"stat-label"},"Gastos"), h("div",{className:"stat-value",style:{color:"var(--danger)"}}, fmtARS(totalExpense))),
+      h("div", { className:"stat-divider" }),
+      h("div", { className:"stat" }, h("div",{className:"stat-label"},"Saldo"), h("div",{className:"stat-value",style:{color: balance>=0?"var(--text)":"var(--danger)"}}, fmtARS(balance))),
+      h("div", { className:"stat-divider" }),
+      h("div", { className:"stat" }, h("div",{className:"stat-label"},"Te deben"), h("div",{className:"stat-value",style:{color:"#D8A94E"}}, fmtARS(teDeben)))
+    ),
+    h("div", { className:"columns" },
+      h("section", { className:"panel" },
+        h("h2", null, "Categorías"),
+        topCats.map(p => {
+          const kids = childrenOf(p.id);
+          const rows = kids.length ? kids : [p];
+          return h("div", { key:p.id },
+            kids.length > 0 && h("div", { className:"group-label" }, p.name),
+            rows.map(c => {
+              const spent = spentByCategory[c.id] || 0;
+              const pct = c.budget > 0 ? Math.min(100,(spent/c.budget)*100) : 0;
+              const over = spent > c.budget;
+              return h("div", { className:"cat-row", key:c.id },
+                h("div", { className:"cat-row-top" },
+                  h("span", { className:"cat-name" }, c.name),
+                  h("button", { className:"link-btn", onClick:()=>mutate("deleteCategory",{id:c.id}) }, "Eliminar")
+                ),
+                h("div", { className:"track" }, h("div", { className:`fill ${over?"over":""}`, style:{width:pct+"%"} })),
+                h("div", { className:`cat-row-bottom ${over?"over":""}` },
+                  h("span", null, `${fmtARS(spent)} gastado`),
+                  h("span", null, "de ", h("input", { className:"inline-input", type:"number", value:c.budget,
+                    onChange:e=>mutate("updateCategory",{id:c.id, budget: parseFloat(e.target.value)||0}) }))
+                )
+              );
+            })
+          );
+        }),
+        h("form", { onSubmit:submitCat, style:{marginTop:16} },
+          h("div", { className:"form-row" },
+            h("input", { className:"field", placeholder:"Nueva categoría", value:newCatName, onChange:e=>setNewCatName(e.target.value), style:{flex:1,minWidth:100} }),
+            h("select", { className:"field", value:newCatParent, onChange:e=>setNewCatParent(e.target.value) },
+              h("option", { value:"" }, "Sin grupo"),
+              topCats.map(p => h("option", { key:p.id, value:p.id }, p.name))
+            )
+          ),
+          h("div", { className:"form-row" },
+            h("input", { className:"field", type:"number", placeholder:"Presupuesto", value:newCatBudget, onChange:e=>setNewCatBudget(e.target.value), style:{width:130} }),
+            h("button", { className:"btn-secondary", type:"submit" }, "Agregar")
+          )
+        )
+      ),
+      h("section", { className:"panel" },
+        h("h2", null, "Movimientos del mes"),
+        h("form", { onSubmit:submitTx },
+          h("div", { className:"form-row" },
+            h("input", { className:"field", placeholder:"Descripción", value:form.desc, onChange:e=>setForm({...form,desc:e.target.value}), style:{flex:2,minWidth:130} }),
+            h("input", { className:"field", type:"number", placeholder:"Monto", value:form.amount, onChange:e=>setForm({...form,amount:e.target.value}), style:{width:100} }),
+            h("select", { className:"field", value:form.currency, onChange:e=>setForm({...form,currency:e.target.value}) },
+              h("option",{value:"ARS"},"ARS"), h("option",{value:"USD"},"USD")
+            )
+          ),
+          h("div", { className:"form-row" },
+            h("select", { className:"field", value:form.type, onChange:e=>setForm({...form,type:e.target.value}) },
+              h("option",{value:"expense"},"Gasto"), h("option",{value:"income"},"Ingreso")
+            ),
+            form.type === "expense" && h("select", { className:"field", value:form.categoryId, onChange:e=>setForm({...form,categoryId:e.target.value}) },
+              h("option",{value:""},"Categoría…"),
+              flatOptions.map(c => h("option",{key:c.id,value:c.id}, c.name))
+            ),
+            h("input", { className:"field", type:"date", value:form.date, onChange:e=>setForm({...form,date:e.target.value}) })
+          ),
+          form.type === "expense" && h("div", { className:"form-row" },
+            h("label", { className:"check" },
+              h("input", { type:"checkbox", checked:form.shared, onChange:e=>setForm({...form,shared:e.target.checked}) }),
+              "Compartido (50/50)"
+            ),
+            h("button", { className:"btn-primary", type:"submit" }, "Agregar")
+          ),
+          form.type !== "expense" && h("button", { className:"btn-primary", type:"submit" }, "Agregar")
+        ),
+        h("div", { className:"tx-list" },
+          monthTx.length === 0 && h("div", { className:"empty" }, "Todavía no cargaste movimientos este mes."),
+          monthTx.map(t => {
+            const cat = categories.find(c => c.id === t.categoryId);
+            return h("div", { className:"tx-row", key:t.id },
+              h("div", { className:"tx-row-top" },
+                h("div", null,
+                  h("div", { className:"tx-desc" }, t.desc),
+                  h("div", { className:"tx-meta" }, `${t.date}${cat ? " · "+cat.name : ""}`)
+                ),
+                h("div", { className:"tx-right" },
+                  h("span", { className: t.type==="income"?"amount-income":"amount-expense" }, `${t.type==="income"?"+":"−"}${fmtByCurrency(t.amount,t.currency)}`),
+                  h("button", { className:"link-btn", onClick:()=>mutate("deleteTransaction",{id:t.id}) }, "Eliminar")
+                )
+              ),
+              t.type === "expense" && t.shared && h("div", { style:{marginTop:8, display:"flex", gap:8, alignItems:"center"} },
+                h("span", { className:`tag ${t.status==="pendiente"?"pending":""}` }, t.status === "pendiente" ? "Pendiente de cobrar" : "Saldado"),
+                h("button", { className:"link-btn", onClick:()=>mutate("updateTransaction",{id:t.id, status: t.status==="pendiente"?"saldado":"pendiente"}) },
+                  t.status === "pendiente" ? "Marcar saldado" : "Marcar pendiente")
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
